@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   scrollView: { flexGrow: 1 },
   column: { width: columnWidth, marginRight: 20, marginTop: 10, marginBottom: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10 },
   columnTitleContainer: { padding: 10, borderTopLeftRadius: 10, borderTopRightRadius: 10, alignItems: 'center', justifyContent: 'center', width: '100%' },
-  columnTitle: { fontSize: 18, fontWeight: 'bold', color: '#000' },
+  columnTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   card: { padding: 15, backgroundColor: '#ffffff', borderRadius: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3, marginBottom: 10 },
   firstCardSpacing: { marginTop: 10, marginBottom: 5 },
   normalCardSpacing: { marginBottom: 5 },
