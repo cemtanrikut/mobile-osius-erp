@@ -1,75 +1,109 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, StatusBar, Platform, SafeAreaView } from 'react-native';
+import { VictoryLine, VictoryBar, VictoryPie } from "victory-native";
+import Svg from "react-native-svg";
+import { MaterialIcons } from "@expo/vector-icons";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import 'react-native-reanimated';
+const screenWidth = Dimensions.get('window').width;
 
-export default function HomeScreen() {
+
+
+export default function DashboardScreen() {
+  // const AppBar = () => (
+  //   <SafeAreaView style={styles.appBarContainer}>
+  //     <View style={styles.appBar}>
+  //       <Text style={styles.appBarTitle}>Dashboard</Text>
+  //     </View>
+  //   </SafeAreaView>
+  // );
+
+  const taskCompletionData = [
+    { day: 'Mon', tasks: 3 },
+    { day: 'Tue', tasks: 5 },
+    { day: 'Wed', tasks: 7 },
+    { day: 'Thu', tasks: 4 },
+    { day: 'Fri', tasks: 6 },
+  ];
+
+  const taskStatusData = [
+    { status: 'To Do', count: 5 },
+    { status: 'In Progress', count: 3 },
+    { status: 'Done', count: 7 },
+  ];
+
+  const taskTypeData = [
+    { x: 'Vraag', y: 4 },
+    { x: 'Klacht', y: 3 },
+    { x: 'Comentaar', y: 5 },
+    { x: 'Complimenten', y: 2 },
+  ];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      {/* <AppBar /> */}
+      <ScrollView style={styles.container}>
+
+        {/* Pasta Grafiği */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>📊 Ticket Status</Text>
+            <VictoryPie
+              data={taskTypeData}
+              colorScale={['#007AFF', '#FF3B30', '#FF9F43', '#32CD32']}
+              labels={({ datum }) => `${datum.x}: ${datum.y}%`}
+            />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f4f4f4', 
+    padding: 0, 
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    textAlign: 'center', 
+    marginVertical: 10 
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  chartContainer: { 
+    backgroundColor: 'white', 
+    borderRadius: 10, 
+    padding: 15, 
+    marginBottom: 15, 
+    elevation: 3 
   },
+  chartTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
+
+  // // 🎯 **Dynamic Island için AYARLANMIŞ AppBar**
+  // appBarContainer: { 
+  //   backgroundColor: '#007AFF', 
+  //   paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 30, 
+  //   paddingBottom: 10, 
+  //   width: '100%', 
+  // },
+  // appBar: { 
+  //   flexDirection: 'row', 
+  //   justifyContent: 'space-between', // 🔥 Sola hizalamak için
+  //   alignItems: 'center', 
+  //   paddingVertical: 15, 
+  //   paddingHorizontal: 20, // 🎯 Kenar boşlukları eşitlemek için
+  //   width: '100%', 
+  // },
+  // appBarTitle: { 
+  //   color: 'white', 
+  //   fontSize: 18, 
+  //   fontWeight: 'bold',
+  //   textAlign: 'left',  // 🎯 Solda hizalama
+  // },
 });
+
+

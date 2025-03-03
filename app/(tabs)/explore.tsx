@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const screenWidth = Dimensions.get('window').width;
-const columnWidth = screenWidth * 0.8;
+const columnWidth = screenWidth * 0.75;
 
 const initialColumns = [
   {
@@ -37,16 +37,27 @@ const initialColumns = [
   }
 ];
 
-const AppBar = () => (
-  <SafeAreaView style={styles.appBarContainer}>
-    <View style={styles.appBar}>
-      <Text style={styles.appBarTitle}>Tickets</Text>
-      <TouchableOpacity style={styles.addButton} onPress={() => console.log('Add Task') }>
-        <MaterialIcons name="add" size={24} color="white" />
-      </TouchableOpacity>
-    </View>
-  </SafeAreaView>
-);
+// const AppBar = () => (
+//   <SafeAreaView style={styles.appBarContainer}>
+//     <View style={styles.appBar}>
+//       <Text style={styles.appBarTitle}>Tickets</Text>
+//       <TouchableOpacity style={styles.addButton} onPress={() => console.log('Add Task') }>
+//         <MaterialIcons name="add" size={24} color="white" />
+//       </TouchableOpacity>
+//     </View>
+//   </SafeAreaView>
+// );
+
+// const AppBar = () => (
+//     <SafeAreaView style={styles.appBarContainer}>
+//       <View style={styles.appBar}>
+//         <Text style={styles.appBarTitle}>Tickets</Text>
+//         <TouchableOpacity style={styles.addButton} onPress={() => console.log('Add Task') }>
+//         <MaterialIcons name="add" size={24} color="white" />
+//       </TouchableOpacity>
+//       </View>
+//     </SafeAreaView>
+//   );
 
 const getTypeColor = (type: string): string => {
   switch (type) {
@@ -61,31 +72,31 @@ const getTypeColor = (type: string): string => {
 export default function TicketsScreen() {
   const [columns, setColumns] = useState(initialColumns);
 
-  const renderItem = ({ item, drag, index }: { item: any; drag: () => void; index: number }) => (
-    <View style={[styles.card, index === 0 ? styles.firstCardSpacing : styles.normalCardSpacing]} onTouchStart={drag}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.cardSubtitle}>👤 {item.assignedTo}</Text>
-      <Text style={styles.cardDate}>📅 {item.date}</Text>
-      <Text style={styles.cardLocation}><MaterialIcons name="location-on" size={16} color="#666" /> {item.location}</Text>
-      {item.file && <Text style={styles.cardFile}><MaterialIcons name="attach-file" size={16} color="#666" /> {item.file}</Text>}
-      <View style={[styles.typeBadge, { backgroundColor: getTypeColor(item.type) }]}>
-        <Text style={styles.typeText}>{item.type}</Text>
-      </View>
-    </View>
-  );
-
   return (
     <GestureHandlerRootView style={styles.container}>
-      <AppBar />
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.scrollView}>
+      {/* <AppBar /> */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {columns.map((column, index) => (
           <View key={column.id} style={[styles.column, { marginLeft: index === 0 ? 20 : 0 }]}> 
-            <View style={[styles.columnTitleContainer, { backgroundColor: column.color }]}> 
+            <View style={[styles.columnTitleContainer, { backgroundColor: column.color, marginHorizontal: -10, marginTop: -10 }]}> 
               <Text style={styles.columnTitle}>{column.title}</Text>
             </View>
             <DraggableFlatList
               data={column.tasks}
-              renderItem={(props) => renderItem(props)}
+              renderItem={({ item, drag, getIndex }) => (
+                <TouchableOpacity>
+                  <View style={styles.card} onTouchStart={drag}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardSubtitle}>👤 {item.assignedTo}</Text>
+                    <Text style={styles.cardDate}>📅 {item.date}</Text>
+                    <Text style={styles.cardLocation}><MaterialIcons name="location-on" size={16} color="#666" /> {item.location}</Text>
+                    {item.file && <Text style={styles.cardFile}><MaterialIcons name="attach-file" size={16} color="#666" /> {item.file}</Text>}
+                    <View style={[styles.typeBadge, { backgroundColor: getTypeColor(item.type) }]}> 
+                      <Text style={styles.typeText}>{item.type}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
               keyExtractor={(item) => item.id}
               onDragEnd={({ data }) => {
                 setColumns(prevColumns =>
@@ -104,13 +115,34 @@ export default function TicketsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f4f4' },
-  appBarContainer: { backgroundColor: '#007AFF', paddingTop: StatusBar.currentHeight || 30 },
-  appBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 },
-  appBarTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  addButton: { padding: 8, borderRadius: 20, backgroundColor: '#005BBB' },
+  // addButton: { padding: 8, borderRadius: 20, backgroundColor: '#005BBB', marginTop: 70 },
+  // appBarContainer: { 
+  //   backgroundColor: '#007AFF', 
+  //   paddingTop: Platform.OS === 'ios' ? 20 : StatusBar.currentHeight || 30, 
+  //   paddingBottom: 0, 
+  //   marginTop: -10,
+  //   width: '100%', 
+  // },
+  // appBar: { 
+  //   flexDirection: 'row', 
+  //   justifyContent: 'space-between', // 🔥 "Tickets" solda, + butonu sağda
+  //   alignItems: 'center', 
+  //   paddingVertical: 0,
+  //   marginTop: -70, 
+  //   paddingHorizontal: 20, // 🎯 Kenar boşlukları Dashboard ile aynı
+  //   width: '100%', 
+  // },
+  // appBarTitle: { 
+  //   color: 'white', 
+  //   fontSize: 18, 
+  //   fontWeight: 'bold',
+  //   marginTop: 70,
+  //   textAlign: 'left',  
+  // },
   scrollView: { flexGrow: 1 },
-  column: { width: columnWidth, marginRight: 20, marginTop: 10, marginBottom: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10 },
-  columnTitleContainer: { padding: 10, borderTopLeftRadius: 10, borderTopRightRadius: 10, alignItems: 'center', justifyContent: 'center', width: '100%' },
+  scrollContent: { flexDirection: 'row', alignItems: 'flex-start' },
+  column: { width: columnWidth, marginRight: 10, marginTop: 10, marginBottom: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10 },
+  columnTitleContainer: { padding: 10, borderTopLeftRadius: 10, borderTopRightRadius: 10, alignItems: 'center', justifyContent: 'center', width: '100%', paddingHorizontal: 0 },
   columnTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   card: { padding: 15, backgroundColor: '#ffffff', borderRadius: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3, marginBottom: 10 },
   firstCardSpacing: { marginTop: 10, marginBottom: 5 },
