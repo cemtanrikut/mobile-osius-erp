@@ -20,6 +20,8 @@ export default function App() {
           const iconName = tabIcons[route.name] || "help-outline";
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
+        // Pure appbar gozuksun / gozukmesin
+        headerShown: true,
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
