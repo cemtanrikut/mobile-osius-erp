@@ -700,32 +700,20 @@ export default function ListScreen() {
           <MaterialIcons name="add" size={28} color="white" />
         </TouchableOpacity>
       </View> */}
-            {/* Filtre Butonları */}
             <View style={styles.filterContainer}>
-                {/* 🎯 **Statü Değiştirme Butonları** */}
-                {selectedTab === "todo" && (
-                    <TouchableOpacity style={[styles.moveButton, styles.orangeButton]} onPress={() => moveTask("inProgress")}>
-                        <Text style={styles.moveButtonText}>Move to In Progress</Text>
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity style={[styles.filterButton, selectedTab === "todo" && styles.selected]} onPress={() => setSelectedTab("todo")}>
+                    <Text style={[styles.filterText, selectedTab === "todo" && styles.selectedText]}>To Do</Text>
+                </TouchableOpacity>
 
-                {selectedTab === "inProgress" && (
-                    <>
-                        <TouchableOpacity style={[styles.moveButton, styles.blueButton]} onPress={() => moveTask("todo")}>
-                            <Text style={styles.moveButtonText}>Move to To Do</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.moveButton, styles.greenButton]} onPress={() => moveTask("done")}>
-                            <Text style={styles.moveButtonText}>Move to Done</Text>
-                        </TouchableOpacity>
-                    </>
-                )}
+                <TouchableOpacity style={[styles.filterButton, selectedTab === "inProgress" && styles.selected]} onPress={() => setSelectedTab("inProgress")}>
+                    <Text style={[styles.filterText, selectedTab === "inProgress" && styles.selectedText]}>In Progress</Text>
+                </TouchableOpacity>
 
-                {selectedTab === "done" && (
-                    <TouchableOpacity style={[styles.moveButton, styles.orangeButton]} onPress={() => moveTask("inProgress")}>
-                        <Text style={styles.moveButtonText}>Move to In Progress</Text>
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity style={[styles.filterButton, selectedTab === "done" && styles.selected]} onPress={() => setSelectedTab("done")}>
+                    <Text style={[styles.filterText, selectedTab === "done" && styles.selectedText]}>Done</Text>
+                </TouchableOpacity>
             </View>
+
 
             {/* Liste */}
             {loading ? (
@@ -768,13 +756,13 @@ export default function ListScreen() {
                                 <Text style={styles.modalMeta}>📍 {selectedTask.location} | 👤 {selectedTask.assignedTo} | 📅 {selectedTask.date}</Text>
 
                                 {/* 🎯 **Durum Değiştirme Butonları** */}
-                                {selectedTab === "todo" && (
+                                {selectedTask.status === "todo" && (
                                     <TouchableOpacity style={[styles.moveButton, styles.orangeButton]} onPress={() => moveTask("inProgress")}>
                                         <Text style={styles.moveButtonText}>Move to In Progress</Text>
                                     </TouchableOpacity>
                                 )}
 
-                                {selectedTab === "inProgress" && (
+                                {selectedTask.status === "inProgress" && (
                                     <>
                                         <TouchableOpacity style={[styles.moveButton, styles.blueButton]} onPress={() => moveTask("todo")}>
                                             <Text style={styles.moveButtonText}>Move to To Do</Text>
@@ -785,7 +773,7 @@ export default function ListScreen() {
                                     </>
                                 )}
 
-                                {selectedTab === "done" && (
+                                {selectedTask.status === "done" && (
                                     <TouchableOpacity style={[styles.moveButton, styles.orangeButton]} onPress={() => moveTask("inProgress")}>
                                         <Text style={styles.moveButtonText}>Move to In Progress</Text>
                                     </TouchableOpacity>
