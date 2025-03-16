@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from "@react-navigation/stack";
 import { MaterialIcons } from '@expo/vector-icons';
 import DashboardScreen from './index';
 import TicketsScreen from './explore';
@@ -11,6 +12,13 @@ const tabIcons: Record<string, keyof typeof MaterialIcons.glyphMap> = {
   Tickets: "assignment",
   List: "format-list-bulleted",
 };
+
+export type RootStackParamList = {
+  DashboardScreen: undefined;
+  ListScreen: { selectedTab: "todo" | "inProgress" | "done" };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
