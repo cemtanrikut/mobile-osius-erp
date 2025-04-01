@@ -33,8 +33,8 @@ export default function App() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Tickets" component={TicketsScreen} />
-      <Tab.Screen name="List" component={ListScreen} />
+      {/* <Tab.Screen name="Tickets" component={TicketsScreen} /> */}
+      <Tab.Screen name="Tickets" component={ListScreen} />
     </Tab.Navigator>
   );
 }

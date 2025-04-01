@@ -44,14 +44,6 @@ export default function ListScreen() {
         file?: { name: string; uri: string; type: string };
     }[]>>({});
     const [ws, setWs] = useState<WebSocket | null>(null);
-    const messagesEndRef = useRef<FlatList>(null);
-    const [ticketFiles, setTicketFiles] = useState<
-        { name: string; uri: string; type: string }[]
-    >([]);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [descExpanded, setDescExpanded] = useState(false);
-
-
 
     // 📦 Ticketları API'den çek
     useEffect(() => {
@@ -102,34 +94,17 @@ export default function ListScreen() {
             const msg = JSON.parse(event.data);
             console.log("📩 Gelen mesaj:", msg);
 
-            const formattedMessage = {
-                text: msg.text,
-                sender: msg.sender,
-                time: new Date(msg.created_at || Date.now()).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: false,
-                    timeZone: "Europe/Amsterdam",
-                }),
-                file: msg.file,
-            };
-
-            setMessages((prev) => {
-                const ticketId = msg.ticket_id;
-                const currentMessages = prev[ticketId] || [];
-                return {
-                    ...prev,
-                    [ticketId]: [...currentMessages, formattedMessage],
-                };
-            });
-
-            // Eğer açık olan ticket ile aynıysa scroll ve re-render
-            if (selectedTask?.ticketId === msg.ticket_id) {
-                setTimeout(() => {
-                    messagesEndRef.current?.scrollToEnd({ animated: true });
-                }, 300);
-            }
+            setMessages((prev) => ({
+                ...prev,
+                [msg.ticket_id]: [
+                    ...(prev[msg.ticket_id] || []),
+                    {
+                        text: msg.text,
+                        sender: msg.sender,
+                        time: new Date(msg.created_at).toLocaleTimeString(),
+                    },
+                ],
+            }));
         };
 
         socket.onerror = (err) => {
@@ -146,42 +121,10 @@ export default function ListScreen() {
         return () => socket.close();
     }, []);
 
-
-    const fetchMessagesForTicket = async (ticketId: string) => {
-        try {
-            const response = await fetch(`https://api-osius.up.railway.app/messages/${ticketId}`);
-            const data = await response.json();
-
-            // Beklenen format: [{ text, sender, created_at }, ...]
-            const formatted = data.map((msg: any) => ({
-                text: msg.text,
-                sender: msg.sender,
-                time: new Date(msg.created_at || Date.now()).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: false, // 24 saat formatı istiyorsan bunu kullan
-                    timeZone: "Europe/Amsterdam", // 🔥 burası önemli!
-                }),
-                file: msg.file || undefined, // dosya varsa ekle
-            }));
-
-            setMessages((prev) => ({
-                ...prev,
-                [ticketId]: formatted,
-            }));
-        } catch (error) {
-            console.error("❌ Eski mesajlar alınamadı:", error);
-        }
-    };
-
-
     // 🟦 Görev detayını gösteren modalı aç
     const openModal = (task: Task) => {
         setSelectedTask(task);
         setModalVisible(true);
-        fetchMessagesForTicket(task.ticketId);
-        fetchTicketFiles(task.ticketId); // 🔥 Dosyaları getir
     };
 
     // 🔴 Görev detayını kapat
@@ -191,57 +134,11 @@ export default function ListScreen() {
     };
 
     // 🟢 Mesaj gönder
-    // const sendMessage = () => {
-    //     if (!newMessage.trim() || !selectedTask) return;
-
-    //     const messageData = {
-    //         ticket_id: selectedTask.ticketId,
-    //         sender: "You",
-    //         text: newMessage,
-    //         created_at: new Date().toISOString(),
-    //     };
-
-    //     if (ws && ws.readyState === WebSocket.OPEN) {
-    //         ws.send(JSON.stringify(messageData));
-    //     } else {
-    //         Toast.show({
-    //             type: "error",
-    //             text1: "Bağlantı Hatası",
-    //             text2: "WebSocket bağlantısı yok.",
-    //         });
-    //         return;
-    //     }
-
-    //     setMessages((prev) => ({
-    //         ...prev,
-    //         [selectedTask.ticketId]: [
-    //             ...(prev[selectedTask.ticketId] || []),
-    //             {
-    //                 text: messageData.text,
-    //                 sender: messageData.sender,
-    //                 time: new Date(messageData.created_at || Date.now()).toLocaleTimeString("en-GB", {
-    //                     hour: "2-digit",
-    //                     minute: "2-digit",
-    //                     second: "2-digit",
-    //                     hour12: false, // 24 saat formatı istiyorsan bunu kullan
-    //                     timeZone: "Europe/Amsterdam", // 🔥 burası önemli!
-    //                 }),
-
-    //             },
-    //         ],
-    //     }));
-
-    //     setNewMessage("");
-
-    //     setTimeout(() => {
-    //         messagesEndRef.current?.scrollToEnd({ animated: true });
-    //     }, 300);
-    // };
     const sendMessage = () => {
         if (!newMessage.trim() || !selectedTask) return;
 
         const messageData = {
-            ticket_id: selectedTask.ticketId, // dikkat! .ticketId olmalı
+            ticket_id: selectedTask.id,
             sender: "You",
             text: newMessage,
             created_at: new Date().toISOString(),
@@ -252,15 +149,26 @@ export default function ListScreen() {
         } else {
             Toast.show({
                 type: "error",
-                text1: "WebSocket bağlantısı yok",
+                text1: "Bağlantı Hatası",
+                text2: "WebSocket bağlantısı yok.",
             });
             return;
         }
 
+        setMessages((prev) => ({
+            ...prev,
+            [selectedTask.id]: [
+                ...(prev[selectedTask.id] || []),
+                {
+                    text: messageData.text,
+                    sender: messageData.sender,
+                    time: new Date(messageData.created_at).toLocaleTimeString(),
+                },
+            ],
+        }));
+
         setNewMessage("");
     };
-
-
 
     const pickDocument = async () => {
         try {
@@ -299,13 +207,7 @@ export default function ListScreen() {
                     {
                         text: message.text,
                         sender: message.sender,
-                        time: new Date(message.created_at || Date.now()).toLocaleTimeString("en-GB", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: false, // 24 saat formatı istiyorsan bunu kullan
-                            timeZone: "Europe/Amsterdam", // 🔥 burası önemli!
-                        }),
+                        time: new Date(message.created_at).toLocaleTimeString(),
                         file: pickedFile,
                     },
                 ],
@@ -332,63 +234,6 @@ export default function ListScreen() {
             }
         }
     };
-
-    // En son mesasja odakla
-    useEffect(() => {
-        if (!modalVisible || !selectedTask?.ticketId) return;
-
-        const ticketId = selectedTask.ticketId;
-        const msgList = messages[ticketId];
-
-        if (msgList && msgList.length > 0) {
-            setTimeout(() => {
-                messagesEndRef.current?.scrollToIndex({
-                    index: msgList.length - 1,
-                    animated: true,
-                });
-            }, 300);
-        }
-    }, [messages, modalVisible, selectedTask?.ticketId]);
-
-    
-    // Dosyalari serverdan cek
-    const fetchTicketFiles = async (ticketId: string) => {
-        try {
-          const response = await fetch(`https://api-osius.up.railway.app/tickets/${ticketId}/files`);
-          const data = await response.json();
-      
-          const formatted = data.map((file: any) => {
-            let rawUrl = file.fileUrl || file.FileURL || file.url || file.uri || "";
-      
-            // 🔥 Eğer localhost ile başlıyorsa düzelt
-            if (rawUrl.startsWith("http://localhost") || rawUrl.startsWith("https://localhost")) {
-              rawUrl = rawUrl.replace("http://localhost:8080", "https://api-osius.up.railway.app");
-              rawUrl = rawUrl.replace("https://localhost:8080", "https://api-osius.up.railway.app");
-            }
-      
-            // 🔐 Boşlukları ve özel karakterleri encode et
-            const encodedUri = encodeURI(rawUrl);
-      
-            const name = file?.Filename || file?.name || "Unnamed";
-            const type =
-              encodedUri.toLowerCase().endsWith(".jpg") ||
-              encodedUri.toLowerCase().endsWith(".jpeg") ||
-              encodedUri.toLowerCase().endsWith(".png")
-                ? "image/jpeg"
-                : "application/octet-stream";
-      
-            return { name, uri: encodedUri, type };
-          });
-      
-          console.log("✅ Yüklenen dosyalar:", formatted);
-          setTicketFiles(formatted);
-        } catch (err) {
-          console.error("❌ Dosyalar alınamadı:", err);
-          Toast.show({ type: "error", text1: "Dosyalar yüklenemedi" });
-        }
-      };
-      
-      
 
 
     return (
@@ -441,119 +286,23 @@ export default function ListScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* <Text style={styles.modalDescription}>{selectedTask?.description}</Text> */}
-                    <View style={{ marginBottom: 8 }}>
-  <Text
-    style={styles.modalDescription2}
-    numberOfLines={descExpanded ? undefined : 2}
-  >
-    {selectedTask?.description}
-  </Text>
-  {selectedTask?.description && selectedTask.description.length > 60 && (
-    <TouchableOpacity onPress={() => setDescExpanded(!descExpanded)}>
-      <Text style={{ color: "#007AFF", fontWeight: "500" }}>
-        {descExpanded ? "Show less ▲" : "Read more ›"}
-      </Text>
-    </TouchableOpacity>
-  )}
-</View>
-
+                    <Text style={styles.modalDescription}>{selectedTask?.description}</Text>
                     <Text style={styles.modalMeta}>
                         👤 {selectedTask?.assignedTo} • 📍 {selectedTask?.location} • 📅 {selectedTask?.date}
                     </Text>
 
-                    {ticketFiles.length > 0 && (
-                        <View style={{ marginVertical: 10 }}>
-                            <Text style={{ fontWeight: "bold", marginBottom: 6 }}>📎 Attached Files</Text>
-                            <FlatList
-                                data={ticketFiles}
-                                keyExtractor={(item, index) => index.toString()}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={{ marginRight: 10 }}
-                                        onPress={() => {
-                                            if (item.uri && item.type.startsWith("image/")) {
-                                                setImagePreview(item.uri);
-                                            } else if (item.uri) {
-                                                openFile(item.uri, item.type);
-                                            }
-                                        }}
-                                    >
-                                        {item.type.startsWith("image/") ? (
-                                            <Image
-                                                source={{ uri: item.uri }}
-                                                style={{
-                                                    width: 80,
-                                                    height: 80,
-                                                    borderRadius: 6,
-                                                    borderWidth: 1,
-                                                    borderColor: "#ccc",
-                                                }}
-                                                onError={() => console.warn("🚫 Görsel yüklenemedi:", item.uri)}
-                                            />
-                                        ) : (
-                                            <View
-                                                style={{
-                                                    width: 80,
-                                                    height: 80,
-                                                    backgroundColor: "#eee",
-                                                    justifyContent: "center",
-                                                    alignItems: "center",
-                                                    borderRadius: 6,
-                                                }}
-                                            >
-                                                <MaterialIcons name="insert-drive-file" size={32} color="#666" />
-                                                <Text numberOfLines={1} style={{ fontSize: 10, textAlign: "center", paddingHorizontal: 4 }}>
-                                                    {item.name}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-
-                                )}
-                            />
-                        </View>
-                    )}
-
-                    <Modal visible={!!imagePreview} transparent animationType="fade">
-                        <View style={styles.fullscreenModal}>
-                            <TouchableOpacity onPress={() => setImagePreview(null)} style={styles.closeButton}>
-                                <MaterialIcons name="close" size={24} color="white" />
-                            </TouchableOpacity>
-                            {imagePreview && (
-                                <Image
-                                    source={{ uri: imagePreview }}
-                                    style={styles.fullscreenImage}
-                                    onError={() => {
-                                        console.warn("🚫 Büyük görsel yüklenemedi:", imagePreview);
-                                        setImagePreview(null);
-                                    }}
-                                />
-                            )}
-                        </View>
-                    </Modal>
-
-
-
-
                     {/* 💬 Mesajlar */}
                     <View style={styles.messageBox}>
                         <FlatList
-                            ref={messagesEndRef}
-                            data={messages[selectedTask?.ticketId || ""] || []}
+                            data={messages[selectedTask?.id || ""] || []}
                             keyExtractor={(_, index) => index.toString()}
                             renderItem={({ item }) => (
-                                <View
-                                    style={[
-                                        styles.messageBubble,
-                                        item.sender === "You" ? styles.sentMessage : styles.receivedMessage,
-                                    ]}
-                                >
+                                <View style={[
+                                    styles.messageBubble,
+                                    item.sender === "You" ? styles.sentMessage : styles.receivedMessage
+                                ]}>
                                     <Text style={styles.messageSender}>{item.sender}</Text>
                                     <Text style={styles.messageText}>{item.text}</Text>
-
                                     {item.file?.uri && item.file?.type && (
                                         <TouchableOpacity onPress={() => openFile(item.file!.uri, item.file!.type)}>
                                             {item.file?.type.startsWith("image/") ? (
@@ -569,25 +318,7 @@ export default function ListScreen() {
                                     <Text style={styles.messageTime}>{item.time}</Text>
                                 </View>
                             )}
-                            getItemLayout={(data, index) => ({
-                                length: 100,
-                                offset: 100 * index,
-                                index,
-                              })}
-                              onScrollToIndexFailed={(info) => {
-                                setTimeout(() => {
-                                  messagesEndRef.current?.scrollToIndex({
-                                    index: info.index,
-                                    animated: true,
-                                  });
-                                }, 500);
-                              }}
-                            // 🔽 🔥 Buraya ekliyoruz:
-                            onContentSizeChange={() =>
-                                messagesEndRef.current?.scrollToEnd({ animated: true })
-                            }
                         />
-
                     </View>
 
                     {/* 📝 Mesaj Yaz */}
@@ -617,6 +348,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#F4F4F4",
+        paddingTop: 10,
     },
 
     // 🔷 Sekmeler
@@ -703,7 +435,7 @@ const styles = StyleSheet.create({
     modalMeta: {
         fontSize: 12,
         color: "#888",
-        marginBottom: 5,
+        marginBottom: 16,
     },
 
     // 💬 Mesajlar
@@ -768,28 +500,4 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 20,
     },
-    fullscreenModal: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.9)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    fullscreenImage: {
-        width: "90%",
-        height: "80%",
-        resizeMode: "contain",
-    },
-    closeButton: {
-        position: "absolute",
-        top: 40,
-        right: 20,
-        zIndex: 10,
-    },
-    modalDescription2: {
-        fontSize: 14,
-        color: "#444",
-        marginBottom: 4,
-        textAlign: "justify",
-      },
-      
 });      
