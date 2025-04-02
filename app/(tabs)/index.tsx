@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, StatusBar, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { VictoryLine, VictoryBar, VictoryPie } from "victory-native";
 import Svg from "react-native-svg";
@@ -9,35 +9,88 @@ const screenWidth = Dimensions.get('window').width;
 
 export default function DashboardScreen() {
   const navigation = useNavigation();  // 📌 Navigasyon hook'u
+  const [totalTickets, setTotalTickets] = useState(0);
+  const [toDoTickets, setToDoTickets] = useState(0);
+  const [inProgressTickets, setInProgressTickets] = useState(0);
+  const [doneTickets, setDoneTickets] = useState(0);
+  const [notificationChartData, setNotificationChartData] = useState<{ x: string; y: number }[]>([]);
 
-  // Task verileri (Örnek)
-  const totalTickets = 8;
-  const toDoTickets = 5;
-  const inProgressTickets = 1;
-  const doneTickets = 2;
-
-  const taskCompletionData = [
-    { day: 'Mon', tasks: 3 },
-    { day: 'Tue', tasks: 5 },
-    { day: 'Wed', tasks: 7 },
-    { day: 'Thu', tasks: 4 },
-    { day: 'Fri', tasks: 6 },
-  ];
-
-  const taskStatusData = [
-    { status: 'To Do', count: 5 },
-    { status: 'In Progress', count: 3 },
-    { status: 'Done', count: 7 },
-  ];
-
-  const taskTypeData = [
-    { x: 'Vraag', y: 4 },
-    { x: 'Klacht', y: 3 },
-    { x: 'Comentaar', y: 5 },
-    { x: 'Complimenten', y: 2 },
-  ];
+  const notificationTypes = {
+    Complimenten: "bg-green-300 text-green-800",
+    Comentaar: "bg-blue-300 text-blue-800",
+    Vraag: "bg-yellow-300 text-yellow-800",
+    Klacht: "bg-red-300 text-red-800",
+    Melding: "bg-gray-300 text-gray-800",
+    "Extra Werk": "bg-purple-300 text-purple-800",
+    Ongegrond: "bg-orange-300 text-orange-800",
+    Unknown: "bg-slate-300 text-gray-700", // 🆕 bilinmeyen veya boş değerler için
+  };
   
+
+  // Ticket sayilari
+  useEffect(() => {
+    const fetchTicketStats = async () => {
+      try {
+        const response = await fetch("https://api-osius.up.railway.app/tickets");
+        const data = await response.json();
   
+        // ❗️ Sadece silinmemiş ticketlar (deletedAt değeri boş olanlar)
+        const activeTickets = data.filter((t: any) => !t.DeletedAt || t.DeletedAt === "");
+        console.log("🔍 notificationType gelen:", JSON.stringify(activeTickets));
+
+  
+        const total = activeTickets.length;
+        const todo = activeTickets.filter((t: any) => t.status === "ToDo").length;
+        const inProgress = activeTickets.filter((t: any) => t.status === "inProgress").length;
+        const done = activeTickets.filter((t: any) => t.status === "done").length;
+  
+        setTotalTickets(total);
+        setToDoTickets(todo);
+        setInProgressTickets(inProgress);
+        setDoneTickets(done);
+      } catch (error) {
+        console.error("❌ Dashboard verileri çekilemedi:", error);
+      }
+    };
+  
+    fetchTicketStats();
+  }, []);
+  
+
+  // Chart Degerleri
+  useEffect(() => {
+    const fetchTicketStats = async () => {
+      try {
+        const response = await fetch("https://api-osius.up.railway.app/tickets");
+        const data = await response.json();
+
+        const total = data.length || 1;
+
+        // Bildirim tiplerine göre gruplama
+        const counts: Record<string, number> = {};
+
+        data.forEach((ticket: any) => {
+          const type = ticket.notificationType || "Unknown";
+          console.log("🔍 notificationType gelen:", JSON.stringify(ticket.notificationType));
+
+          counts[type] = (counts[type] || 0) + 1;
+        });
+
+        // VictoryPie için data dönüştür
+        const chartData = Object.entries(counts).map(([type, count]) => ({
+          x: type,
+          y: Math.round((count / total) * 100),
+        }));
+
+        setNotificationChartData(chartData);
+      } catch (error) {
+        console.error("❌ Bildirim tipi verileri çekilemedi:", error);
+      }
+    };
+
+    fetchTicketStats();
+  }, []);
+
   // 📌 **Navigasyon Fonksiyonu**
   const navigateToList = (status: "todo" | "inProgress" | "done") => {
     // navigation.navigate("ListScreen", { selectedTab: status });
@@ -52,30 +105,41 @@ export default function DashboardScreen() {
           <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("todo")}>
             <Text style={styles.statNumber}>{totalTickets}</Text>
             <Text style={styles.statLabel}>Total Tickets</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("todo")}>
-          <Text style={styles.statNumber}>{toDoTickets}</Text>
-          <Text style={styles.statLabel}>To Do</Text>
           </TouchableOpacity>
-        <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("inProgress")}>
-          <Text style={styles.statNumber}>{inProgressTickets}</Text>
-          <Text style={styles.statLabel}>In Progress</Text>
+          <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("todo")}>
+            <Text style={styles.statNumber}>{toDoTickets}</Text>
+            <Text style={styles.statLabel}>To Do</Text>
           </TouchableOpacity>
-        <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("done")}>
-          <Text style={styles.statNumber}>{doneTickets}</Text>
-          <Text style={styles.statLabel}>Done</Text>
+          <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("inProgress")}>
+            <Text style={styles.statNumber}>{inProgressTickets}</Text>
+            <Text style={styles.statLabel}>In Progress</Text>
           </TouchableOpacity>
-    </View>
+          <TouchableOpacity style={styles.statCard} onPress={() => navigateToList("done")}>
+            <Text style={styles.statNumber}>{doneTickets}</Text>
+            <Text style={styles.statLabel}>Done</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Pasta Grafiği */ }
-  <View style={styles.chartContainer}>
-    <Text style={styles.chartTitle}>📊 Ticket Status</Text>
-    <VictoryPie
-      data={taskTypeData}
-      colorScale={['#007AFF', '#FF3B30', '#FF9F43', '#32CD32']}
-      labels={({ datum }) => `${datum.x}: ${datum.y}%`}
-    />
-  </View>
+        {/* Pasta Grafiği */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>📊 Ticket Notification Types</Text>
+          <VictoryPie
+            data={notificationChartData}
+            labels={({ datum }) => `${datum.x}: ${datum.y}%`}
+            padding={{ top: 20, bottom: 40, left: 60, right: 60 }}
+            colorScale={[
+              "#4ADE80", // Complimenten
+              "#60A5FA", // Comentaar
+              "#FACC15", // Vraag
+              "#F87171", // Klacht
+              "#D1D5DB", // Melding
+              "#C084FC", // Extra Werk
+              "#FDBA74", // Ongegrond
+              "#94A3B8", // Bilinmiyor
+            ]}
+          />
+        </View>
+
       </ScrollView >
     </View >
   );
@@ -98,6 +162,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
+    margin: 10,
     elevation: 3
   },
   chartTitle: {
@@ -131,28 +196,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-
-  // // 🎯 **Dynamic Island için AYARLANMIŞ AppBar**
-  // appBarContainer: { 
-  //   backgroundColor: '#007AFF', 
-  //   paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 30, 
-  //   paddingBottom: 10, 
-  //   width: '100%', 
-  // },
-  // appBar: { 
-  //   flexDirection: 'row', 
-  //   justifyContent: 'space-between', // 🔥 Sola hizalamak için
-  //   alignItems: 'center', 
-  //   paddingVertical: 15, 
-  //   paddingHorizontal: 20, // 🎯 Kenar boşlukları eşitlemek için
-  //   width: '100%', 
-  // },
-  // appBarTitle: { 
-  //   color: 'white', 
-  //   fontSize: 18, 
-  //   fontWeight: 'bold',
-  //   textAlign: 'left',  // 🎯 Solda hizalama
-  // },
 });
 
 
