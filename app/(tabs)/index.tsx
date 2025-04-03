@@ -1,14 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, StatusBar, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { VictoryLine, VictoryBar, VictoryPie } from "victory-native";
 import Svg from "react-native-svg";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, NavigationProp, StackActions } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoginScreen from './login';
 
 const screenWidth = Dimensions.get('window').width;
 
+export type RootStackParamList = {
+  LoginScreen: undefined;
+  MainTabs: undefined;
+};
+
+
 export default function DashboardScreen() {
-  const navigation = useNavigation();  // 📌 Navigasyon hook'u
+  // const navigation = useNavigation();  // 📌 Navigasyon hook'u
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [totalTickets, setTotalTickets] = useState(0);
   const [toDoTickets, setToDoTickets] = useState(0);
   const [inProgressTickets, setInProgressTickets] = useState(0);
@@ -25,7 +34,58 @@ export default function DashboardScreen() {
     Ongegrond: "bg-orange-300 text-orange-800",
     Unknown: "bg-slate-300 text-gray-700", // 🆕 bilinmeyen veya boş değerler için
   };
+
+  useEffect(() => {
+    const fetchName = async () => {
+      try {
+        const name = await AsyncStorage.getItem("name");
+        console.log("✅ Kullanıcı Adı:", name);
+      } catch (error) {
+        console.error("❌ Hata:", error);
+      }
+    };
+
+    fetchName();
+  }, []);
+
+  //Logout
+  const [userName, setUserName] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+
+  useLayoutEffect(() => {
+    const loadUser = async () => {
+      const name = await AsyncStorage.getItem("name");
+      if (name) setUserName(name);
+    };
+    loadUser();
+
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginRight: 12 }}>
+          <TouchableOpacity
+            style={styles.userButton}
+            onPress={() => setShowMenu(!showMenu)}
+          >
+            <MaterialIcons name="person" size={18} color="#fff" />
+            <Text style={styles.userName}>{userName}</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, userName, showMenu]);
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    // Bu logout sonrası App.tsx'teki isLoggedIn kontrolünü tetikleyecek
+    // @ts-ignore
+    navigation.replace("LoginScreen");
+  };
   
+
+
+
 
   // Ticket sayilari
   useEffect(() => {
@@ -33,17 +93,17 @@ export default function DashboardScreen() {
       try {
         const response = await fetch("https://api-osius.up.railway.app/tickets");
         const data = await response.json();
-  
+
         // ❗️ Sadece silinmemiş ticketlar (deletedAt değeri boş olanlar)
         const activeTickets = data.filter((t: any) => !t.DeletedAt || t.DeletedAt === "");
         console.log("🔍 notificationType gelen:", JSON.stringify(activeTickets));
 
-  
+
         const total = activeTickets.length;
         const todo = activeTickets.filter((t: any) => t.status === "ToDo").length;
         const inProgress = activeTickets.filter((t: any) => t.status === "inProgress").length;
         const done = activeTickets.filter((t: any) => t.status === "done").length;
-  
+
         setTotalTickets(total);
         setToDoTickets(todo);
         setInProgressTickets(inProgress);
@@ -52,10 +112,10 @@ export default function DashboardScreen() {
         console.error("❌ Dashboard verileri çekilemedi:", error);
       }
     };
-  
+
     fetchTicketStats();
   }, []);
-  
+
 
   // Chart Degerleri
   useEffect(() => {
@@ -99,6 +159,15 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       {/* <AppBar /> */}
+      {showMenu && (
+        <View style={styles.logoutMenu}>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <MaterialIcons name="logout" size={18} color="#FF3B30" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView style={styles.container}>
         {/* 📌 **İstatistik Kartları** */}
         <View style={styles.statsContainer}>
@@ -195,6 +264,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+  },
+  userButton: {
+    flexDirection: "row",
+    backgroundColor: "#007AFF",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  userName: {
+    color: "#fff",
+    marginLeft: 6,
+    fontWeight: "600",
+  },
+  logoutMenu: {
+    position: "absolute",
+    right: 20,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 8,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    zIndex: 999,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoutText: {
+    color: "#FF3B30",
+    marginLeft: 6,
+    fontWeight: "bold",
   },
 });
 
